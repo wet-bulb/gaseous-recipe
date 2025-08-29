@@ -1,35 +1,53 @@
----
+version: "3.8"
 services:
   app:
-    image: nginx:1.27.5
+    image: gaseousgames/gaseousserver:latest
+    restart: unless-stopped
+    networks:
+      - gaseous
+    depends_on:
+      - db
+    volumes:
+      - gs:/root/.gaseous-server
+    environment:
+      - TZ=Australia/Sydney
+      - dbhost=db
+      - dbuser=root
+      - dbpass=gaseous
+      - igdbclientid=xzw3qqlajqg4y9xy8iycsxrsm6euzo
+      - igdbclientsecret=rxnf7xdx67cf5e9vkmvrqpcxeigbht
+  db:
+    image: mariadb
+    restart: unless-stopped
     networks:
       - proxy
+      - gaseous
+    volumes:
+      - gsdb:/var/lib/mysql
+    environment:
+      - MARIADB_ROOT_PASSWORD=gaseous
+      - MARIADB_USER=gaseous
+      - MARIADB_PASSWORD=gaseous
     deploy:
       restart_policy:
         condition: on-failure
       labels:
         - "traefik.enable=true"
+        - "traefik.docker.network=proxy"
         - "traefik.http.services.${STACK_NAME}.loadbalancer.server.port=80"
         - "traefik.http.routers.${STACK_NAME}.rule=Host(`${DOMAIN}`${EXTRA_DOMAINS})"
-        - "traefik.http.routers.${STACK_NAME}.entrypoints=web-secure"
         - "traefik.http.routers.${STACK_NAME}.tls.certresolver=${LETS_ENCRYPT_ENV}"
-        ## Redirect from EXTRA_DOMAINS to DOMAIN
-        #- "traefik.http.routers.${STACK_NAME}.middlewares=${STACK_NAME}-redirect"
-        ## Redirect HTTP to HTTPS
-        # - "traefik.http.middlewares.${STACK_NAME}-redirect.redirectscheme.scheme=https"
-        # - "traefik.http.middlewares.${STACK_NAME}-redirect.redirectscheme.permanent=true"
-        ## When you're ready for release, run "abra recipe sync <name>" to set this
-        - "coop-cloud.${STACK_NAME}.version="
-        ## Enable backups: https://docs.coopcloud.tech/maintainers/handbook/#how-do-i-configure-backuprestore
-        # - "backupbot.backup=true"
-        # - "backupbot.backup.path=/some/path"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost"]
-      interval: 30s
-      timeout: 10s
-      retries: 10
-      start_period: 1m
+        - "traefik.http.routers.${STACK_NAME}.entrypoints=web-secure"
+        - "traefik.http.routers.${STACK_NAME}.middlewares=${STACK_NAME}-redirect"
+        - "traefik.http.middlewares.${STACK_NAME}-redirect.headers.SSLForceHost=true"
+        - "traefik.http.middlewares.${STACK_NAME}-redirect.headers.SSLHost=${DOMAIN}"
+        - "coop-cloud.${STACK_NAME}.version=0.1.0+4.3.1"
 
 networks:
   proxy:
     external: true
+  gaseous:
+    driver: bridge
+volumes:
+  gs:
+  gsdb:
