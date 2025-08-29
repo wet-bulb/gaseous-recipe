@@ -4,6 +4,7 @@ services:
     image: gaseousgames/gaseousserver:latest
     restart: unless-stopped
     networks:
+      - proxy
       - gaseous
     depends_on:
       - db
@@ -34,7 +35,6 @@ services:
     image: mariadb
     restart: unless-stopped
     networks:
-      - proxy
       - gaseous
     volumes:
       - gsdb:/var/lib/mysql
