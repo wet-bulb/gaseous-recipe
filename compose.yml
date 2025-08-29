@@ -16,6 +16,20 @@ services:
       - dbpass=gaseous
       - igdbclientid=xzw3qqlajqg4y9xy8iycsxrsm6euzo
       - igdbclientsecret=rxnf7xdx67cf5e9vkmvrqpcxeigbht
+    deploy:
+      restart_policy:
+        condition: on-failure
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=proxy"
+        - "traefik.http.services.${STACK_NAME}.loadbalancer.server.port=80"
+        - "traefik.http.routers.${STACK_NAME}.rule=Host(`${DOMAIN}`${EXTRA_DOMAINS})"
+        - "traefik.http.routers.${STACK_NAME}.tls.certresolver=${LETS_ENCRYPT_ENV}"
+        - "traefik.http.routers.${STACK_NAME}.entrypoints=web-secure"
+        - "traefik.http.routers.${STACK_NAME}.middlewares=${STACK_NAME}-redirect"
+        - "traefik.http.middlewares.${STACK_NAME}-redirect.headers.SSLForceHost=true"
+        - "traefik.http.middlewares.${STACK_NAME}-redirect.headers.SSLHost=${DOMAIN}"
+        - "coop-cloud.${STACK_NAME}.version=0.1.0+4.3.1"
   db:
     image: mariadb
     restart: unless-stopped
@@ -28,17 +42,6 @@ services:
       - MARIADB_ROOT_PASSWORD=gaseous
       - MARIADB_USER=gaseous
       - MARIADB_PASSWORD=gaseous
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=proxy"
-      - "traefik.http.services.${STACK_NAME}.loadbalancer.server.port=80"
-      - "traefik.http.routers.${STACK_NAME}.rule=Host(`${DOMAIN}`${EXTRA_DOMAINS})"
-      - "traefik.http.routers.${STACK_NAME}.tls.certresolver=${LETS_ENCRYPT_ENV}"
-      - "traefik.http.routers.${STACK_NAME}.entrypoints=web-secure"
-      - "traefik.http.routers.${STACK_NAME}.middlewares=${STACK_NAME}-redirect"
-      - "traefik.http.middlewares.${STACK_NAME}-redirect.headers.SSLForceHost=true"
-      - "traefik.http.middlewares.${STACK_NAME}-redirect.headers.SSLHost=${DOMAIN}"
-      - "coop-cloud.${STACK_NAME}.version=0.1.0+4.3.1"
 
 networks:
   proxy:
