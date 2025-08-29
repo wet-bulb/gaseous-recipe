@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     networks:
       - proxy
-      - gaseous
+      - internal
     depends_on:
       - db
     volumes:
@@ -35,7 +35,7 @@ services:
     image: mariadb
     restart: unless-stopped
     networks:
-      - gaseous
+      - internal
     volumes:
       - gsdb:/var/lib/mysql
     environment:
@@ -46,8 +46,7 @@ services:
 networks:
   proxy:
     external: true
-  gaseous:
-    driver: bridge
+  internal:
 volumes:
   gs:
   gsdb:
